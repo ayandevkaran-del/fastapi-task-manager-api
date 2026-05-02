@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-10">
+    <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
+        <h1 class="text-2xl font-bold mb-4">API Demo</h1>
+        
+        <div id="auth">
+            <input id="user" type="text" placeholder="Email" class="border p-2 w-full mb-2">
+            <input id="pass" type="password" placeholder="Password" class="border p-2 w-full mb-4">
+            <button onclick="authAction('register')" class="bg-green-500 text-white px-4 py-2 rounded">Register</button>
+            <button onclick="authAction('login')" class="bg-blue-500 text-white px-4 py-2 rounded">Login</button>
+        </div>
+
+        <div id="dashboard" class="hidden mt-6">
+            <h2 class="text-xl font-bold">Your Tasks</h2>
+            <div id="taskList" class="my-4"></div>
+            <input id="taskT" type="text" placeholder="Title" class="border p-2 w-full mb-2">
+            <button onclick="addTask()" class="bg-purple-500 text-white px-4 py-2 rounded">Add Task</button>
+        </div>
+    </div>
+
+    <script>
+        let token = "";
+        async function authAction(type) {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(type === 'register') {
+                await fetch(`http://localhost:8000/register?email=${u}&password=${p}`, {method: 'POST'});
+                alert("Registered! Now Login.");
+            } else {
+                const formData = new FormData();
+                formData.append('username', u);
+                formData.append('password', p);
+                const res = await fetch('http://localhost:8000/login', {method: 'POST', body: formData});
+                const data = await res.json();
+                token = data.access_token;
+                document.getElementById('auth').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                loadTasks();
+            }
+        }
+
+        async function loadTasks() {
+            const res = await fetch('http://localhost:8000/tasks', {headers: {'Authorization': `Bearer ${token}`}});
+            const tasks = await res.json();
+            document.getElementById('taskList').innerHTML = tasks.map(t => `<p class="border-b p-2">${t.title}</p>`).join('');
+        }
+
+        async function addTask() {
+            const t = document.getElementById('taskT').value;
+            await fetch(`http://localhost:8000/tasks?title=${t}&desc=work`, {
+                method: 'POST', 
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            loadTasks();
+        }
+    </script>
+</body>
+</html>
